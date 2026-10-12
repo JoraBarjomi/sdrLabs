@@ -8,10 +8,11 @@ find_package(SoapySDR REQUIRED)
 
 set(MAIN_SOURCE_FILES
     main.cpp
+    sdr/sdr.cpp
 )
 
 # Добавляем исполняемый файл
-add_executable(main ${MAIN_SOURCE_FILES})
+add_executable(sdr ${MAIN_SOURCE_FILES})
 
 # Линкуем библиотеки к исполняемому файлу
-target_link_libraries(main ${SoapySDR_LIBRARIES})
+target_link_libraries(sdr ${SoapySDR_LIBRARIES})
