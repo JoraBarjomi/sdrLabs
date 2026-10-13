@@ -12,13 +12,13 @@
 
 #include "sdr/sdr.hpp"
 
-constexpr size_t iteration_count = 100;
+constexpr size_t iteration_count = 300;
 
 constexpr long timeoutUs = 400000;
 
 int main(int argc, char* argv[]) {
   char *sdrIp = NULL, *sdrMode = NULL;
-  for (size_t i = 1; i < argc; i++) {
+  for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-ip") == 0) {
       sdrIp = argv[++i];
     } else if (strcmp(argv[i], "-mode") == 0) {
@@ -57,13 +57,14 @@ int main(int argc, char* argv[]) {
     void* buffs[] = {txBuffer.data()};
 
     for (size_t i = 0; i < 2 * mtu; i += 2) {
-      txBuffer[i] = 123 << 4;
-      txBuffer[i + 1] = 456 << 4;
+      txBuffer[i] = 777 << 4;
+      txBuffer[i + 1] = 666 << 4;
     }
 
     for (size_t j = 0; j < iteration_count; j++) {
-      mySdr.device()->writeStream(txStream, buffs, mtu, flags, timeNs,
-                                  timeoutUs);
+      int samples = mySdr.device()->writeStream(txStream, buffs, mtu, flags,
+                                                timeNs, timeoutUs);
+      std::cout << "Samples sent: " << samples << "\n";
     }
 
     mySdr.device()->deactivateStream(txStream);
