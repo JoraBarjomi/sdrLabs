@@ -15,8 +15,8 @@ SDR::SDR(std::string ip, SDRMode mode) : ip_(ip), mode_(mode) {
   SoapySDR::Kwargs args;
   args["driver"] = "plutosdr";
   args["uri"] = "ip:" + ip;
-  // args["direct"] = "1";
-  // args["loopback"] = "0";
+  args["direct"] = "0";
+  args["loopback"] = "0";
   // args["timestamp_every"] = "1920";
   dev_ = SoapySDR::Device::make(args);
   if (!dev_) {

@@ -47,9 +47,6 @@ int main(int argc, char* argv[]) {
 
   auto mySdr = SDR(sdrIp, mode);
 
-  int flags = 0;
-  long long timeNs = 0;
-
   if (mode == SDRMode::Tx) {
     SoapySDR::Stream* txStream =
         mySdr.device()->setupStream(SOAPY_SDR_TX, SOAPY_SDR_CS16, {0});
@@ -64,10 +61,9 @@ int main(int argc, char* argv[]) {
       txBuffer[i + 1] = 666 << 4;
     }
 
-    timeNs = mySdr.device()->getHardwareTime() + 100'000'000LL;
-    flags = SOAPY_SDR_HAS_TIME;
-
     for (size_t j = 0; j < iteration_count; j++) {
+      int flags = 0;
+      long long timeNs = mySdr.device()->getHardwareTime();
       int samples = mySdr.device()->writeStream(txStream, buffs, mtu, flags,
                                                 timeNs, timeoutUs);
       std::cout << "Samples sent: " << samples << " timeNS: " << timeNs << "\n";
@@ -90,15 +86,21 @@ int main(int argc, char* argv[]) {
     std::vector<int16_t> rxBuffer(2 * mtu);
     void* buffs[] = {rxBuffer.data()};
 
-    for (size_t buffers_read = 0; buffers_read < iteration_count;
-         buffers_read++) {
+    for (size_t buffers_read = 0; buffers_read < iteration_count;) {
+      int flags = 0;
+      long long timeNs = 0;
       int samples = mySdr.device()->readStream(rxStream, buffs, mtu, flags,
                                                timeNs, timeoutUs);
+      if (samples < 0) {
+        continue;
+      }
+
       std::cout << "Samples readed: " << samples << "\n";
-      if (file.is_open() && samples > 0) {
+      if (file.is_open()) {
         file.write(reinterpret_cast<const char*>(rxBuffer.data()),
                    2 * samples * sizeof(int16_t));
       }
+      buffers_read++;
     }
     mySdr.device()->deactivateStream(rxStream);
     mySdr.device()->closeStream(rxStream);
