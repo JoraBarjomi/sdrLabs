@@ -5,10 +5,12 @@
 
 #include <SoapySDR/Device.hpp>   // Инициализация устройства
 #include <SoapySDR/Formats.hpp>  // Типы данных, используемых для записи сэмплов
-#include <cstring>               // strcmp
-#include <fstream>               // open close file stream
-#include <iostream>              // cout
+#include <chrono>
+#include <cstring>   // strcmp
+#include <fstream>   // open close file stream
+#include <iostream>  // cout
 #include <string>
+#include <thread>
 
 #include "sdr/sdr.hpp"
 
@@ -51,6 +53,7 @@ int main(int argc, char* argv[]) {
   if (mode == SDRMode::Tx) {
     SoapySDR::Stream* txStream =
         mySdr.device()->setupStream(SOAPY_SDR_TX, SOAPY_SDR_CS16, {0});
+    // читать timeNS через readStream
     mySdr.device()->activateStream(txStream);
     size_t mtu = mySdr.device()->getStreamMTU(txStream);
     std::vector<int16_t> txBuffer(2 * mtu);
@@ -61,10 +64,14 @@ int main(int argc, char* argv[]) {
       txBuffer[i + 1] = 666 << 4;
     }
 
+    timeNs = mySdr.device()->getHardwareTime() + 100'000'000LL;
+    flags = SOAPY_SDR_HAS_TIME;
+
     for (size_t j = 0; j < iteration_count; j++) {
       int samples = mySdr.device()->writeStream(txStream, buffs, mtu, flags,
                                                 timeNs, timeoutUs);
-      std::cout << "Samples sent: " << samples << "\n";
+      std::cout << "Samples sent: " << samples << " timeNS: " << timeNs << "\n";
+      std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
     mySdr.device()->deactivateStream(txStream);

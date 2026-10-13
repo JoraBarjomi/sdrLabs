@@ -4,8 +4,8 @@
 #include <string>
 
 constexpr int sample_rate = 1e6;
-constexpr int rx_freq = 1800e6;
-constexpr int tx_freq = 1900e6;
+constexpr int rx_freq = 850e6;
+constexpr int tx_freq = 800e6;
 
 enum SDRMode { Tx, Rx };
 
