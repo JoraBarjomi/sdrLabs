@@ -60,13 +60,13 @@ int main(int argc, char* argv[]) {
   }
 
   // Настраиваем устройства RX\TX
-  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, 2e6) != 0) {
+  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, 4e6) != 0) {
     printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
   }
   if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, 400e6, NULL) != 0) {
     printf("setFrequency rx fail: %s\n", SoapySDRDevice_lastError());
   }
-  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, 2e6) != 0) {
+  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, 4e6) != 0) {
     printf("setSampleRate tx fail: %s\n", SoapySDRDevice_lastError());
   }
   if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, 400e6, NULL) != 0) {
