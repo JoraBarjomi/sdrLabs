@@ -121,7 +121,8 @@ int main(int argc, char* argv[]) {
   }
 
   SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0);  // start streaming
-  SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);  // start streaming
+  if (mode == 1)
+    SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);  // start streaming
 
   printf("Start test...\n");
 
@@ -174,14 +175,14 @@ int main(int argc, char* argv[]) {
           "Buffer: %zu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n",
           buffers_read, sr, flags, timeNs, timeNs - last_time);
       if (file) fwrite(rx_buffer, sizeof(int16_t), 2 * sr, file);
-    } else if (buffers_read % 2 == 0) {                // tx: шлём пакет
+    } else if (buffers_read % 20 == 0) {               // tx: шлём пакет
       long long tx_time = timeNs + (4 * 1000 * 1000);  // на 4 мс в будущее
       for (size_t i = 0; i < 8; i++) {
         uint8_t tx_time_byte = (tx_time >> (i * 8)) & 0xff;
         tx_buff[2 + i] = static_cast<int16_t>(tx_time_byte << 4);
       }
       const void* tx_buffs[] = {tx_buff};
-      int txFlags = SOAPY_SDR_HAS_TIME;
+      int txFlags = SOAPY_SDR_HAS_TIME | SOAPY_SDR_END_BURST;
       int st = SoapySDRDevice_writeStream(sdr, txStream, tx_buffs, tx_mtu,
                                           &txFlags, tx_time, timeoutUs);
       if ((size_t)st != tx_mtu) {

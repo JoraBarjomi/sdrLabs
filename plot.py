@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Открываем файл для чтения
-name = "sdrLabs/build/txdata.bin"
+name = "sdrLabs/build/rxdata.pcm"
 
 data = []
 imag = []
