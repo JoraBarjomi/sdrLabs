@@ -60,16 +60,16 @@ int main(int argc, char* argv[]) {
   }
 
   // Настраиваем устройства RX\TX
-  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, 4e6) != 0) {
+  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_RX, 0, 2e6) != 0) {
     printf("setSampleRate rx fail: %s\n", SoapySDRDevice_lastError());
   }
   if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_RX, 0, 400e6, NULL) != 0) {
     printf("setFrequency rx fail: %s\n", SoapySDRDevice_lastError());
   }
-  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, 4e6) != 0) {
+  if (SoapySDRDevice_setSampleRate(sdr, SOAPY_SDR_TX, 0, 2e6) != 0) {
     printf("setSampleRate tx fail: %s\n", SoapySDRDevice_lastError());
   }
-  if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, 450e6, NULL) != 0) {
+  if (SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, 400e6, NULL) != 0) {
     printf("setFrequency tx fail: %s\n", SoapySDRDevice_lastError());
   }
 
@@ -79,12 +79,12 @@ int main(int argc, char* argv[]) {
   // Инициализация количества каналов RX\\TX (в AdalmPluto он один, нулевой)
   size_t channels[] = {0};  // Настройки усилителей на RX\\TX
   // Чувствительность приемника
-  if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], 30.0) != 0) {
+  if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, channels[0], 60.0) != 0) {
     std::cout << "setGain rx failed[" << SoapySDRDevice_lastError() << "]\n";
   }
   // Усиление передатчика
   if (SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, channels[0],
-                             mode == 1 ? 30.0 : 0.0) != 0) {
+                             mode == 1 ? 75.0 : 0.0) != 0) {
     std::cout << "setGain tx failed[" << SoapySDRDevice_lastError() << "]\n";
   }
 
@@ -103,7 +103,9 @@ int main(int argc, char* argv[]) {
   int16_t tx_buff[2 * tx_mtu];
   int16_t rx_buffer[2 * rx_mtu];
 
+  int sign = 1;
   for (int i = 0; i < 2 * tx_mtu; i += 2) {
+    sign *= -1;
     tx_buff[i] = 1000;
     tx_buff[i + 1] = 1000;
   }
@@ -121,8 +123,7 @@ int main(int argc, char* argv[]) {
   }
 
   SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0);  // start streaming
-  if (mode == 1)
-    SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);  // start streaming
+  SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);  // start streaming
 
   printf("Start test...\n");
 
@@ -175,7 +176,7 @@ int main(int argc, char* argv[]) {
           "Buffer: %zu - Samples: %i, Flags: %i, Time: %lli, TimeDiff: %lli\n",
           buffers_read, sr, flags, timeNs, timeNs - last_time);
       if (file) fwrite(rx_buffer, sizeof(int16_t), 2 * sr, file);
-    } else if (buffers_read % 20 == 0) {               // tx: шлём пакет
+    } else if (buffers_read % 2 == 0) {                // tx: шлём пакет
       long long tx_time = timeNs + (4 * 1000 * 1000);  // на 4 мс в будущее
       for (size_t i = 0; i < 8; i++) {
         uint8_t tx_time_byte = (tx_time >> (i * 8)) & 0xff;
