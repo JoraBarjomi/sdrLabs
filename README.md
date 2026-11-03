@@ -22,6 +22,10 @@ make
 
 Sdr running in two mods: rx, tx.
 
-```sh
-./sdr -ip <IP> -mode <MODE>
+```bash
+SoapySDRUtil --find // Find current sdr usb id
+
+./sdr rx usb:1.5.5
+or
+./sdr tx usb:1.6.5
 ```
