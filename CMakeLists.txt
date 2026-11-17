@@ -8,6 +8,9 @@ find_package(SoapySDR REQUIRED)
 
 set(MAIN_SOURCE_FILES
     main.cpp
+    utils/bitGen.cpp
+    utils/mapper.cpp
+    utils/convoltion.cpp
 )
 
 # Добавляем исполняемый файл
