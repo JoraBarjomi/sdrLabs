@@ -7,6 +7,24 @@
 #include <string.h>  //strcmp
 
 #include <csignal>
+#include <cstdint>
+#include <vector>
+
+#include "utils/bitsGen.h"
+#include "utils/convoltion.h"
+#include "utils/mapper.h"
+
+/*
+
+1. Генератор битов
+2. Маппер
+3. апсемплер
+4. Отправлять
+
+*/
+
+std::vector<uint8_t> bits;
+constexpr size_t sps = 10;
 
 int freq1 = 800e6;
 int freq2 = 850e6;
@@ -29,6 +47,10 @@ SoapySDRDevice* make_device(const char* uri) {
 
 int run(const char* uri, bool is_tx) {
   SoapySDRDevice* sdr = make_device(uri);
+  if (!sdr) {
+    printf("Устройство не открылось: %s\n", uri);
+    return 1;
+  }
 
   int sample_rate = 2e6;
   int rx_freq = freq1;
@@ -47,14 +69,18 @@ int run(const char* uri, bool is_tx) {
   SoapySDRDevice_setFrequency(sdr, SOAPY_SDR_TX, 0, tx_freq, NULL);
 
   size_t channels[] = {0};
-  SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, *channels, 45.0);
-  SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, *channels, 45.0);
+  SoapySDRDevice_setGain(sdr, SOAPY_SDR_RX, *channels, 0.0);
+  SoapySDRDevice_setGain(sdr, SOAPY_SDR_TX, *channels, 89.0);
   size_t channel_count = sizeof(channels) / sizeof(channels[0]);
 
   SoapySDRStream* rxStream = SoapySDRDevice_setupStream(
       sdr, SOAPY_SDR_RX, SOAPY_SDR_CS16, channels, channel_count, NULL);
   SoapySDRStream* txStream = SoapySDRDevice_setupStream(
       sdr, SOAPY_SDR_TX, SOAPY_SDR_CS16, channels, channel_count, NULL);
+  if (!rxStream || !txStream) {
+    printf("setupStream failed\n");
+    return 1;
+  }
 
   SoapySDRDevice_activateStream(sdr, rxStream, 0, 0, 0);
   SoapySDRDevice_activateStream(sdr, txStream, 0, 0, 0);
@@ -67,13 +93,36 @@ int run(const char* uri, bool is_tx) {
   const long timeoutUs = 400000;
   long long last_time = 0;
   FILE* file = fopen(filename, "w");
+  if (!file) {
+    perror(filename);
+    return 1;
+  }
   size_t buffers_read = 0;
 
-  for (int i = 2; i < 2 * tx_mtu; i += 2) {
-    // ЗДЕСЬ БУДУТ ВАШИ СЭМПЛЫ
-    tx_buff[i] = 666 << 4;      // I
-    tx_buff[i + 1] = 777 << 4;  // Q
-  }
+  //
+  genBits(bits);
+  size_t n_sym = bits.size() / 2;
+  std::vector<int16_t> sym(2 * n_sym);
+  std::vector<int16_t> up(2 * n_sym * sps);
+  std::vector<int16_t> convolved(2 * n_sym * sps);
+
+  map_qpsk(bits, sym.data(), n_sym);
+  upsample(sym.data(), up.data(), n_sym, sps);
+
+  std::vector<int16_t> h(sps, 1);
+  convolve(up.data(), n_sym * sps, h.data(), h.size(), convolved.data());
+
+  constexpr size_t header = 12;
+  memset(tx_buff, 0, 2 * tx_mtu * sizeof(int16_t));
+  size_t payload = std::min(convolved.size(), 2 * tx_mtu - header);
+  std::copy(convolved.begin(), convolved.begin() + payload, tx_buff + header);
+  //
+
+  // for (int i = 2; i < 2 * tx_mtu; i += 2) {
+  //   // ЗДЕСЬ БУДУТ ВАШИ СЭМПЛЫ
+  //   tx_buff[i] = 666 << 4;      // I
+  //   tx_buff[i + 1] = 777 << 4;  // Q
+  // }
 
   void* rx_buffs[] = {rx_buffer};
   signal(SIGINT, on_sigint);
@@ -135,6 +184,7 @@ int run(const char* uri, bool is_tx) {
   SoapySDRDevice_closeStream(sdr, rxStream);
   SoapySDRDevice_closeStream(sdr, txStream);
   SoapySDRDevice_unmake(sdr);
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
